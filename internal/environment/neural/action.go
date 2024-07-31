@@ -17,7 +17,7 @@ const (
 	Left
 )
 
-type IAction interface {
+type Movable interface {
 	Move(d Orientation)
 	MoveDir(d Direction)
 }

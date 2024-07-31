@@ -4,8 +4,6 @@ import "math/rand"
 
 const (
 	Random Kind = iota
-	CurrentX
-	CurrentY
 	PopDensity
 	BlockageFront
 	BlockageLeftRight

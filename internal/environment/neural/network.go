@@ -2,6 +2,7 @@ package neural
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 )
 
@@ -61,15 +62,23 @@ func NewNeuralNet(nSynapses, nInternal int) *Network {
 	return nn
 }
 
-func (n *Network) Compute(exec IAction) {
-	highest := float32(-1)
+type MovableSE interface {
+	SensorEquipped
+	Movable
+}
+
+func (n *Network) Compute(exec MovableSE) {
+	var highest float32
+	value := float32(-1)
 	action := new(Neuron)
 
 	for _, actionNeuron := range n.neurons {
-		num := actionNeuron.Compute()
-		if num > highest {
+		num := actionNeuron.Compute(exec)
+		absNum := float32(math.Abs(float64(num)))
+		if absNum > highest || highest == 0 {
 			action = actionNeuron
-			highest = num
+			highest = absNum
+			value = num
 		}
 	}
 
@@ -81,19 +90,19 @@ func (n *Network) Compute(exec IAction) {
 	case MoveRandom:
 		exec.Move(Orientation(rand.Intn(4)))
 	case MoveLeftRight:
-		if highest > 0 {
+		if value > 0 {
 			exec.MoveDir(Left)
 		} else {
 			exec.MoveDir(Right)
 		}
 	case MoveEastWest:
-		if highest > 0 {
+		if value > 0 {
 			exec.Move(East)
 		} else {
 			exec.Move(West)
 		}
 	case MoveNorthSouth:
-		if highest > 0 {
+		if value > 0 {
 			exec.Move(North)
 		} else {
 			exec.Move(South)

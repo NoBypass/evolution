@@ -21,16 +21,36 @@ type Synapse struct {
 	From, To *Neuron
 }
 
-func (n *Neuron) Compute() float32 {
+type SensorEquipped interface {
+	// PopulationDensity a number between 0 and 1 representing the
+	// fraction of surrounding cells that are occupied.
+	PopulationDensity() float32
+	// BlockageFront returns 1 if the cell in front of the organism
+	// is occupied, 0 otherwise.
+	BlockageFront() float32
+	// BlockageLeftRight returns 1 if the cell to the left is occupied,
+	// -1 if the cell to the right is occupied, 0 otherwise.
+	BlockageLeftRight() float32
+	// EastWestBorderDistance returns a positive number for the fraction
+	// of the distance from the organism to the east border and a negative
+	// number for the distance to the west border.
+	EastWestBorderDistance() float32
+	// NorthSouthBorderDistance returns a positive number for the fraction
+	// of the distance from the organism to the south border and a negative
+	// number for the distance to the north border.
+	NorthSouthBorderDistance() float32
+}
+
+func (n *Neuron) Compute(se SensorEquipped) float32 {
 	parentSolutions := make([]float32, 0, len(n.Incoming))
 
 	for _, synapse := range n.Incoming {
-		parentSolutions = append(parentSolutions, synapse.From.Compute())
+		parentSolutions = append(parentSolutions, synapse.From.Compute(se))
 	}
 
 	switch n.Type {
 	case Sensory:
-		return n.sensorData()
+		return n.sensorData(se)
 	case Internal:
 		return n.computeInternal(parentSolutions)
 	case Action:
@@ -40,13 +60,27 @@ func (n *Neuron) Compute() float32 {
 	}
 }
 
-func (n *Neuron) sensorData() float32 {
+func (n *Neuron) sensorData(se SensorEquipped) float32 {
 	if n.Type != Sensory {
 		panic("expected sensory neuron")
 	}
 
-	// TODO
-	return rand.Float32()*2 - 1
+	switch n.ID {
+	case Random:
+		return rand.Float32()*2 - 1
+	case PopDensity:
+		return se.PopulationDensity()
+	case BlockageFront:
+		return se.BlockageFront()
+	case BlockageLeftRight:
+		return se.BlockageLeftRight()
+	case EastWestBorderDistance:
+		return se.EastWestBorderDistance()
+	case NorthSouthBorderDistance:
+		return se.NorthSouthBorderDistance()
+	default:
+		panic("unexpected sensory neuron")
+	}
 }
 
 func (n *Neuron) computeInternal(solutions []float32) float32 {
