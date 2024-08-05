@@ -9,9 +9,11 @@ import (
 type Network struct {
 	// neurons is a slice of sensory neurons. Each neuron
 	// has links to internal and/or action neurons.
-	neurons []*Neuron
+	neurons  []*Neuron
+	synapses []*Synapse
 }
 
+// TODO replace with more efficient solution
 func NewNeuralNet(nSynapses, nInternal int) *Network {
 	synapses := make([]*Synapse, 0, nSynapses)
 	neurons := make(map[Kind]*Neuron)
@@ -45,7 +47,8 @@ func NewNeuralNet(nSynapses, nInternal int) *Network {
 	}
 
 	nn := &Network{
-		neurons: make([]*Neuron, 0, len(neurons)),
+		neurons:  make([]*Neuron, 0, len(neurons)),
+		synapses: synapses,
 	}
 
 	for _, synapse := range synapses {

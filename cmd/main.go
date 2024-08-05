@@ -11,9 +11,11 @@ const WindowSize = 640
 
 func main() {
 	g := game.Game{
+		// TODO: not hardcode values
 		WindowSize: WindowSize,
-		// TODO: not hardcode nSynapses and maxInternalNeurons
-		Env: environment.New(128, 1000),
+		Env: environment.New(96, 1000, 128, func(org *environment.Organism) bool {
+			return org.EastWestBorderDistance() < 0
+		}),
 	}
 	ebiten.SetWindowSize(WindowSize, WindowSize)
 	ebiten.SetWindowTitle("Evolution")

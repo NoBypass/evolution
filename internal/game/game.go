@@ -10,9 +10,22 @@ import (
 type Game struct {
 	WindowSize int
 	Env        *environment.Environment
+
+	resetting bool
 }
 
 func (g *Game) Update() error {
+	g.Env.CurrGenAge++
+	if g.Env.CurrGenAge >= g.Env.MaxGenAge {
+		g.Env.CurrGenAge = 0
+
+		g.Env.ApplySelection()
+		g.Env.GenerateOffspring(800)
+		g.Env.RandomizeOrganisms()
+
+		return nil
+	}
+
 	for _, org := range g.Env.Organisms {
 		org.Compute()
 	}
@@ -23,6 +36,8 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	cellSize := float32(g.WindowSize) / float32(g.Env.Size)
 	radius := float32(cellSize) / 2
+	orgRadius := radius * 0.8
+
 	vector.DrawFilledRect(screen, 0, 0,
 		float32(g.WindowSize), float32(g.WindowSize),
 		color.RGBA{R: 255, G: 255, B: 255}, false)
@@ -32,8 +47,8 @@ func (g *Game) Draw(screen *ebiten.Image) {
 			screen,
 			float32(org.X)*cellSize+radius,
 			float32(org.Y)*cellSize+radius,
-			radius*0.8,
-			color.RGBA{R: 255, A: 255},
+			orgRadius,
+			org.Color,
 			false)
 	}
 }

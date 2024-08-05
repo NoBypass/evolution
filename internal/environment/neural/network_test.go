@@ -14,7 +14,7 @@ func TestNewNeuralNet(t *testing.T) {
 	}
 
 	t.Run("test if kind matches type", func(t *testing.T) {
-		possibleSensory := []Kind{Random, CurrentX, CurrentY, PopDensity, BlockageFront, BlockageLeftRight, EastWestBorderDistance, NorthSouthBorderDistance}
+		possibleSensory := []Kind{Random, PopDensity, BlockageFront, BlockageLeftRight, EastWestBorderDistance, NorthSouthBorderDistance}
 		possibleAction := []Kind{MoveForward, MoveBackward, MoveRandom, MoveLeftRight, MoveEastWest, MoveNorthSouth}
 		possibleInternal := []Kind{-1, -2, -3}
 

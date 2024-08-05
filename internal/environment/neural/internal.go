@@ -57,3 +57,18 @@ func randomInternalOrActionNeuron(nInternal int) *Neuron {
 		Incoming: make([]*Synapse, 0),
 	}
 }
+
+func generateNeuronByKind(kind Kind) *Neuron {
+	t := Action
+	if kind < 0 {
+		t = Internal
+	} else if kind < _totalSensoryNeurons {
+		t = Sensory
+	}
+
+	return &Neuron{
+		ID:       kind,
+		Type:     t,
+		Incoming: make([]*Synapse, 0),
+	}
+}

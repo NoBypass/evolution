@@ -5,9 +5,9 @@ import (
 	"math/rand"
 )
 
-type Kind int
+type Kind int8
 
-type Type int
+type Type int8
 
 type Neuron struct {
 	ID       Kind

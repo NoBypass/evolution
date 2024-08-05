@@ -2,10 +2,13 @@ package environment
 
 import (
 	"evolution/internal/environment/neural"
+	"image/color"
 )
 
 type Organism struct {
-	net *neural.Network
+	net        *neural.Network
+	EncodedNet *neural.EncodedNet
+	Color      color.RGBA
 
 	X, Y   int
 	Env    *Environment
@@ -13,9 +16,23 @@ type Organism struct {
 }
 
 func NewOrganism(nSynapses, maxInternalNeurons int, env *Environment) *Organism {
+	net := neural.NewNeuralNet(nSynapses, maxInternalNeurons)
+	encoded := net.Encode()
 	return &Organism{
-		net: neural.NewNeuralNet(nSynapses, maxInternalNeurons),
-		Env: env,
+		net:        net,
+		EncodedNet: encoded,
+		Color:      encoded.Color(),
+		Env:        env,
+	}
+}
+
+func NewOrganismFromNetwork(net *neural.Network, env *Environment) *Organism {
+	encoded := net.Encode()
+	return &Organism{
+		net:        net,
+		EncodedNet: encoded,
+		Color:      encoded.Color(),
+		Env:        env,
 	}
 }
 
