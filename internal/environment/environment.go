@@ -9,7 +9,7 @@ import (
 type SelectionFn func(*Organism) bool
 
 type Environment struct {
-	maxPop      int
+	MaxPop      int
 	Size        int
 	selectionFn SelectionFn
 
@@ -23,7 +23,7 @@ type Environment struct {
 func New(size, maxPop, maxGenAge int, selectionFn SelectionFn) *Environment {
 	env := &Environment{
 		Size:        size,
-		maxPop:      maxPop,
+		MaxPop:      maxPop,
 		MaxGenAge:   maxGenAge,
 		selectionFn: selectionFn,
 		Organisms:   make([]*Organism, maxPop),
@@ -50,7 +50,7 @@ func (e *Environment) IsOccupied(x, y int) bool {
 // until the population reaches the maximum population size. The
 // mutationRate is used as a quotient of 1 and the mutationRate
 func (e *Environment) GenerateOffspring(mutationRate int) {
-	for range e.maxPop - len(e.Organisms) {
+	for range e.MaxPop - len(e.Organisms) {
 		offspring := neural.OffspringOf(
 			e.Organisms[rand.Intn(len(e.Organisms))].EncodedNet,
 			e.Organisms[rand.Intn(len(e.Organisms))].EncodedNet)
@@ -64,7 +64,7 @@ func (e *Environment) GenerateOffspring(mutationRate int) {
 }
 
 func (e *Environment) RandomizeOrganisms() {
-	coords := utils.GenerateUniqueCoordinates(e.maxPop, e.Size, e.Size)
+	coords := utils.GenerateUniqueCoordinates(e.MaxPop, e.Size, e.Size)
 
 	for i, org := range e.Organisms {
 		org.X = coords[i][0]
@@ -72,12 +72,14 @@ func (e *Environment) RandomizeOrganisms() {
 	}
 }
 
-func (e *Environment) ApplySelection() {
+func (e *Environment) ApplySelection() (deaths int) {
 	for i := len(e.Organisms) - 1; i >= 0; i-- {
 		org := e.Organisms[i]
 		selected := e.selectionFn(org)
 		if selected {
+			deaths++
 			e.Organisms = append(e.Organisms[:i], e.Organisms[i+1:]...)
 		}
 	}
+	return
 }

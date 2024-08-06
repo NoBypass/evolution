@@ -17,7 +17,7 @@ func main() {
 			return org.EastWestBorderDistance() < 0
 		}),
 	}
-	ebiten.SetWindowSize(WindowSize, WindowSize)
+	ebiten.SetWindowSize(g.Size())
 	ebiten.SetWindowTitle("Evolution")
 	if err := ebiten.RunGame(&g); err != nil {
 		log.Fatal(err)
