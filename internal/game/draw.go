@@ -43,11 +43,11 @@ func (g *Game) drawText(screen *ebiten.Image, str string, x, y int) {
 }
 
 func (g *Game) drawEnvironment(screen *ebiten.Image) {
-	cellSize := float32(g.WindowSize) / float32(g.Env.Size)
+	cellSize := float32(g.WindowSize) / float32(g.currentEnv.Size)
 	radius := float32(cellSize) / 2
 	orgRadius := radius * 0.8
 
-	for _, org := range g.Env.Organisms {
+	for _, org := range g.currentEnv.Organisms {
 		vector.DrawFilledCircle(
 			screen,
 			float32(org.X)*cellSize+radius,
