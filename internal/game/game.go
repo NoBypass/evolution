@@ -5,7 +5,6 @@ import (
 	"evolution/internal/environment"
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
-	"strconv"
 )
 
 const (
@@ -16,10 +15,7 @@ type Game struct {
 	WindowSize int
 	MainEnv    *environment.Environment
 
-	UpdateRequester chan<- struct{}
-	UpdateReceiver  <-chan environment.Environment
-	currentEnv      *environment.Environment
-
+	currentEnv environment.Environment
 	cmdHandler *command.Handler
 }
 
@@ -28,14 +24,11 @@ func NewGame(size int, env *environment.Environment) *Game {
 		WindowSize: size,
 		MainEnv:    env,
 
-		UpdateRequester: env.InitRequester(),
-		UpdateReceiver:  env.InitReceiver(),
-
 		cmdHandler: command.NewHandler(),
 	}
 
 	go env.Run()
-	go g.cmdHandler.Run()
+	go g.cmdHandler.Run(g.MainEnv)
 
 	return &g
 }
@@ -45,23 +38,7 @@ func (g *Game) Size() (int, int) {
 }
 
 func (g *Game) Update() error {
-	select {
-	case cmd := <-g.cmdHandler.Ch:
-		switch cmd.Command {
-		case "mspt":
-			mspt, err := strconv.ParseInt(cmd.Value, 10, 64)
-			if err != nil {
-				fmt.Printf("Invalid mspt value %s\n", cmd.Value)
-			}
-
-			g.MainEnv.MSPT = mspt
-		}
-	default:
-	}
-
-	g.UpdateRequester <- struct{}{}
-	env := <-g.UpdateReceiver
-	g.currentEnv = &env
+	g.currentEnv = *g.MainEnv
 	return nil
 }
 

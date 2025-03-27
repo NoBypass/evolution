@@ -21,9 +21,6 @@ type Environment struct {
 	MaxGenAge  int
 	Survivors  int
 
-	updateRequester <-chan struct{}
-	updateReceiver  chan<- Environment
-
 	MSPT     int64
 	lastTick time.Time
 }
@@ -64,7 +61,7 @@ func (e *Environment) GenerateOffspring(mutationRate int) {
 
 		if rand.Intn(mutationRate) == 0 {
 			// TODO assure no invalid nets are created: offspring.Mutate()
-			// offspring.Mutate()
+			offspring.Mutate()
 		}
 
 		e.Organisms = append(e.Organisms, NewOrganismFromNetwork(offspring.Decode(), e))
@@ -84,27 +81,16 @@ func (e *Environment) RandomizeOrganisms() {
 // has applied to. If an organism was selected, it is removed from the
 // environment.
 func (e *Environment) ApplySelection() (deaths int) {
-	for i := len(e.Organisms) - 1; i >= 0; i-- {
-		org := e.Organisms[i]
-		selected := e.selectionFn(org)
-		if selected {
+	survivors := e.Organisms[:0]
+	for _, org := range e.Organisms {
+		if e.selectionFn(org) {
 			deaths++
-			e.Organisms = append(e.Organisms[:i], e.Organisms[i+1:]...)
+		} else {
+			survivors = append(survivors, org)
 		}
 	}
+	e.Organisms = survivors
 	return
-}
-
-func (e *Environment) InitRequester() chan<- struct{} {
-	requester := make(chan struct{})
-	e.updateRequester = requester
-	return requester
-}
-
-func (e *Environment) InitReceiver() <-chan Environment {
-	receiver := make(chan Environment)
-	e.updateReceiver = receiver
-	return receiver
 }
 
 func (e *Environment) Run() {
@@ -131,12 +117,6 @@ func (e *Environment) Run() {
 
 		for _, org := range e.Organisms {
 			org.Compute()
-		}
-
-		select {
-		case <-e.updateRequester:
-			e.updateReceiver <- *e
-		default:
 		}
 
 		e.lastTick = time.Now()
