@@ -21,6 +21,7 @@ type Environment struct {
 	MaxGenAge  int
 	Survivors  int
 
+	Paused   bool
 	MSPT     int64
 	lastTick time.Time
 }
@@ -61,7 +62,7 @@ func (e *Environment) GenerateOffspring(mutationRate int) {
 
 		if rand.Intn(mutationRate) == 0 {
 			// TODO assure no invalid nets are created: offspring.Mutate()
-			offspring.Mutate()
+			// offspring.Mutate()
 		}
 
 		e.Organisms = append(e.Organisms, NewOrganismFromNetwork(offspring.Decode(), e))
@@ -95,7 +96,10 @@ func (e *Environment) ApplySelection() (deaths int) {
 
 func (e *Environment) Run() {
 	for {
-		if e.MSPT > 0 {
+		if e.Paused {
+			time.Sleep(100 * time.Millisecond)
+			continue
+		} else if e.MSPT > 0 {
 			delta := time.Now().Sub(e.lastTick)
 			if delta.Milliseconds() < e.MSPT {
 				time.Sleep(time.Duration(e.MSPT-delta.Milliseconds()) * time.Millisecond)

@@ -1,6 +1,7 @@
 package environment
 
 import (
+	"encoding/base64"
 	"evolution/internal/environment/neural"
 	"image/color"
 )
@@ -69,4 +70,13 @@ func (o *Organism) Move(d neural.Orientation) {
 
 func (o *Organism) MoveDir(d neural.Direction) {
 	o.Move(d.ToOrientation(o.Facing))
+}
+
+func (o *Organism) String() string {
+	en := o.EncodedNet
+	buf := make([]byte, len(*en)*6)
+	for i, es := range *en {
+		copy(buf[i*6:], es[:])
+	}
+	return base64.StdEncoding.EncodeToString(buf)
 }

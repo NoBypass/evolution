@@ -17,6 +17,8 @@ type Game struct {
 
 	currentEnv environment.Environment
 	cmdHandler *command.Handler
+
+	clickedLastFrame bool
 }
 
 func NewGame(size int, env *environment.Environment) *Game {
@@ -39,6 +41,20 @@ func (g *Game) Size() (int, int) {
 
 func (g *Game) Update() error {
 	g.currentEnv = *g.MainEnv
+
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		if !g.clickedLastFrame {
+			g.clickedLastFrame = true
+			x, y := ebiten.CursorPosition()
+			org := g.getOrganismAtCoordinates(float32(x), float32(y))
+			if org != nil {
+				fmt.Printf("Clicked on organism: %s\n", org)
+			}
+		}
+	} else {
+		g.clickedLastFrame = false
+	}
+
 	return nil
 }
 
