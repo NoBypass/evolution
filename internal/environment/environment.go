@@ -3,10 +3,12 @@ package environment
 import (
 	"evolution/internal/environment/neural"
 	"evolution/internal/utils"
+	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
 	"image/color"
 	"math/rand"
+	"strconv"
 	"time"
 )
 
@@ -24,7 +26,7 @@ type Environment struct {
 	MaxGenAge  int
 	Survivors  int
 
-	Paused   bool
+	paused   bool
 	MSPT     int64
 	lastTick time.Time
 }
@@ -99,7 +101,7 @@ func (e *Environment) ApplySelection() (deaths int) {
 
 func (e *Environment) Run() {
 	for {
-		if e.Paused {
+		if e.paused {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		} else if e.MSPT > 0 {
@@ -149,4 +151,17 @@ func (e *Environment) Draw(screen *ebiten.Image) {
 			org.Color,
 			false)
 	}
+}
+
+func (e *Environment) PauseHandler(args *widget.ButtonClickedEventArgs) {
+	e.paused = !e.paused
+}
+
+func (e *Environment) MSPTSubmitHandler(args *widget.TextInputChangedEventArgs) {
+	mspt, err := strconv.ParseInt(args.InputText, 10, 64)
+	if err != nil {
+		mspt = 0
+	}
+
+	e.MSPT = mspt
 }

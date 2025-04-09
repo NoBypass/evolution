@@ -1,7 +1,6 @@
 package game
 
 import (
-	"evolution/internal/command"
 	"evolution/internal/environment"
 	"fmt"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -17,7 +16,6 @@ type Game struct {
 	MainEnv    *environment.Environment
 
 	currentEnv environment.Environment
-	cmdHandler *command.Handler
 
 	clickedLastFrame bool
 	viewManager      *viewManager
@@ -28,12 +26,13 @@ func NewGame(size int, env *environment.Environment) *Game {
 		WindowSize: size,
 		MainEnv:    env,
 
-		cmdHandler:  command.NewHandler(),
-		viewManager: newViewManager(size),
+		viewManager: newViewManager(size, handlers{
+			pauseButton: env.PauseHandler,
+			msptSubmit:  env.MSPTSubmitHandler,
+		}),
 	}
 
 	go env.Run()
-	go g.cmdHandler.Run(g.MainEnv)
 
 	return &g
 }
