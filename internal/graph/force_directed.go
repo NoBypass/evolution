@@ -8,8 +8,6 @@ import (
 const (
 	Width, Height = 800, 800 // bounds for the simulation
 
-	iterations = 1000 // the amount of iterations performed before the simulation ends
-
 	kSpring    = 0.1   // stiffness of each spring (edge)
 	kRepulsion = 10000 // repulsion strength of the nodes
 
@@ -35,20 +33,14 @@ type Graph struct {
 	Nodes []*Node
 }
 
-func (g *Graph) ApplyForces() {
-	for range iterations {
-		step(g)
-	}
-}
-
-func step(graph *Graph) {
-	for _, n := range graph.Nodes {
+func (g *Graph) tick() {
+	for _, n := range g.Nodes {
 		n.FX, n.FY = 0, 0
 	}
 
-	for i, a := range graph.Nodes {
-		for j := i + 1; j < len(graph.Nodes); j++ {
-			b := graph.Nodes[j]
+	for i, a := range g.Nodes {
+		for j := i + 1; j < len(g.Nodes); j++ {
+			b := g.Nodes[j]
 			dx := a.X - b.X
 			dy := a.Y - b.Y
 			dist := math.Sqrt(dx*dx + dy*dy)
@@ -69,7 +61,7 @@ func step(graph *Graph) {
 		}
 	}
 
-	for _, node := range graph.Nodes {
+	for _, node := range g.Nodes {
 		for _, edge := range node.Edges {
 			to := edge.To
 			dx := node.X - to.X
@@ -87,7 +79,7 @@ func step(graph *Graph) {
 		}
 	}
 
-	for _, n := range graph.Nodes {
+	for _, n := range g.Nodes {
 		n.VX += timeStep * n.FX
 		n.VY += timeStep * n.FY
 

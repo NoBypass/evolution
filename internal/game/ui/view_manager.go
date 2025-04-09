@@ -1,67 +1,38 @@
-package game
+package ui
 
 import (
-	"bytes"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
-	"github.com/hajimehoshi/ebiten/v2/examples/resources/fonts"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	image2 "image"
 	"image/color"
-	"image/png"
 )
 
-var (
-	mplusFaceSource *text.GoTextFaceSource
-	mplusNormalFace *text.GoTextFace
-)
+type ViewManager struct {
+	UI *ebitenui.UI
 
-func init() {
-	s, err := text.NewGoTextFaceSource(bytes.NewReader(fonts.MPlus1pRegular_ttf))
-	if err != nil {
-		panic(err)
-	}
-	mplusFaceSource = s
+	SimulationImg *ebiten.Image
+	GraphImg      *ebiten.Image
 
-	mplusNormalFace = &text.GoTextFace{
-		Source: mplusFaceSource,
-		Size:   24,
-	}
+	GenerationLabel *widget.Text
+	SurvivorsLabel  *widget.Text
+
+	PauseButton *widget.Button
+
+	MsptInput *widget.TextInput
 }
 
-type viewManager struct {
-	ui *ebitenui.UI
-
-	simulationImg *ebiten.Image
-
-	generationLabel *widget.Text
-	survivorsLabel  *widget.Text
-
-	pauseButton *widget.Button
-
-	msptInput *widget.TextInput
+type Handlers struct {
+	PauseButton     widget.ButtonClickedHandlerFunc
+	MsptSubmit      widget.TextInputChangedHandlerFunc
+	SimulationClick widget.WidgetMouseButtonReleasedHandlerFunc
 }
 
-type handlers struct {
-	pauseButton widget.ButtonClickedHandlerFunc
-	msptSubmit  widget.TextInputChangedHandlerFunc
-}
+func NewViewManager(size int, h Handlers) *ViewManager {
+	viewManager := new(ViewManager)
 
-func newViewManager(size int, h handlers) *viewManager {
-	img := image2.NewRGBA(image2.Rect(0, 0, size, size))
-	var buf bytes.Buffer
-	err := png.Encode(&buf, img)
-	if err != nil {
-		panic(err)
-	}
-
-	simulationImg, _, err := ebitenutil.NewImageFromReader(&buf)
-	if err != nil {
-		panic(err)
-	}
+	viewManager.SimulationImg = newPlainImage(size)
+	viewManager.GraphImg = newPlainImage(size)
 
 	root := widget.NewContainer(
 		widget.ContainerOpts.BackgroundImage(image.NewNineSliceColor(color.NRGBA{0xff, 0xff, 0xff, 0xff})),
@@ -72,6 +43,10 @@ func newViewManager(size int, h handlers) *viewManager {
 			widget.GridLayoutOpts.Stretch([]bool{true, true}, []bool{true, true}),
 		)),
 	)
+
+	viewManager.UI = &ebitenui.UI{
+		Container: root,
+	}
 
 	left := widget.NewContainer(
 		widget.ContainerOpts.WidgetOpts(
@@ -99,8 +74,10 @@ func newViewManager(size int, h handlers) *viewManager {
 	)
 
 	simulationGraphic := widget.NewGraphic(
-		widget.GraphicOpts.Image(simulationImg),
-		widget.GraphicOpts.WidgetOpts(),
+		widget.GraphicOpts.Image(viewManager.SimulationImg),
+		widget.GraphicOpts.WidgetOpts(
+			widget.WidgetOpts.MouseButtonReleasedHandler(h.SimulationClick),
+		),
 	)
 
 	header := widget.NewContainer(
@@ -111,12 +88,12 @@ func newViewManager(size int, h handlers) *viewManager {
 		),
 	)
 
-	generationLabel := widget.NewText(widget.TextOpts.Text("", mplusNormalFace, color.Black))
-	survivorsLabel := widget.NewText(widget.TextOpts.Text("", mplusNormalFace, color.Black))
+	viewManager.GenerationLabel = widget.NewText(widget.TextOpts.Text("", mplusNormalFace, color.Black))
+	viewManager.SurvivorsLabel = widget.NewText(widget.TextOpts.Text("", mplusNormalFace, color.Black))
 
 	header.AddChild(
-		generationLabel,
-		survivorsLabel,
+		viewManager.GenerationLabel,
+		viewManager.SurvivorsLabel,
 	)
 
 	left.AddChild(
@@ -124,7 +101,7 @@ func newViewManager(size int, h handlers) *viewManager {
 		simulationGraphic,
 	)
 
-	pauseButton := widget.NewButton(
+	viewManager.PauseButton = widget.NewButton(
 		widget.ButtonOpts.Image(&widget.ButtonImage{
 			Idle:    image.NewBorderedNineSliceColor(color.NRGBA{R: 170, G: 170, B: 180, A: 255}, color.NRGBA{90, 90, 90, 255}, 3),
 			Hover:   image.NewBorderedNineSliceColor(color.NRGBA{R: 130, G: 130, B: 150, A: 255}, color.NRGBA{70, 70, 70, 255}, 3),
@@ -139,10 +116,10 @@ func newViewManager(size int, h handlers) *viewManager {
 			Top:    5,
 			Bottom: 5,
 		}),
-		widget.ButtonOpts.ClickedHandler(h.pauseButton),
+		widget.ButtonOpts.ClickedHandler(h.PauseButton),
 	)
 
-	msptInput := widget.NewTextInput(
+	viewManager.MsptInput = widget.NewTextInput(
 		widget.TextInputOpts.Image(&widget.TextInputImage{
 			Idle:      image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
 			Highlight: image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 150, A: 255}),
@@ -159,7 +136,7 @@ func newViewManager(size int, h handlers) *viewManager {
 			widget.CaretOpts.Size(mplusNormalFace, 2),
 		),
 		widget.TextInputOpts.Placeholder("0"),
-		widget.TextInputOpts.SubmitHandler(h.msptSubmit),
+		widget.TextInputOpts.SubmitHandler(h.MsptSubmit),
 		widget.TextInputOpts.ChangedHandler(func(args *widget.TextInputChangedEventArgs) {
 			filteredText := ""
 			for _, r := range args.InputText {
@@ -174,9 +151,17 @@ func newViewManager(size int, h handlers) *viewManager {
 		}),
 	)
 
+	graphGraphic := widget.NewGraphic(
+		widget.GraphicOpts.Image(viewManager.GraphImg),
+		widget.GraphicOpts.WidgetOpts(
+			widget.WidgetOpts.MouseButtonReleasedHandler(h.SimulationClick),
+		),
+	)
+
 	right.AddChild(
-		pauseButton,
-		msptInput,
+		viewManager.PauseButton,
+		viewManager.MsptInput,
+		graphGraphic,
 	)
 
 	root.AddChild(
@@ -184,18 +169,5 @@ func newViewManager(size int, h handlers) *viewManager {
 		right,
 	)
 
-	return &viewManager{
-		ui: &ebitenui.UI{
-			Container: root,
-		},
-
-		simulationImg: simulationImg,
-
-		generationLabel: generationLabel,
-		survivorsLabel:  survivorsLabel,
-
-		pauseButton: pauseButton,
-
-		msptInput: msptInput,
-	}
+	return viewManager
 }

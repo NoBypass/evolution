@@ -6,7 +6,7 @@ import (
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
-	"image/color"
+	"image"
 	"math/rand"
 	"strconv"
 	"time"
@@ -132,19 +132,17 @@ func (e *Environment) Run() {
 	}
 }
 
-func (e *Environment) Draw(screen *ebiten.Image) {
-	size := float32(screen.Bounds().Max.X)
+func (e *Environment) Draw(img *ebiten.Image) {
+	size := float32(img.Bounds().Max.X)
 	cellSize := size / float32(e.Size)
 	radius := float32(cellSize) / 2
 	orgRadius := radius * 0.8
 
-	vector.DrawFilledRect(screen, 0, 0,
-		size, size,
-		color.RGBA{R: 255, G: 255, B: 255}, false)
+	img.Clear()
 
 	for _, org := range e.Organisms {
 		vector.DrawFilledCircle(
-			screen,
+			img,
 			float32(org.X)*cellSize+radius,
 			float32(org.Y)*cellSize+radius,
 			orgRadius,
@@ -153,7 +151,26 @@ func (e *Environment) Draw(screen *ebiten.Image) {
 	}
 }
 
-func (e *Environment) PauseHandler(args *widget.ButtonClickedEventArgs) {
+func (e *Environment) GetOrganismAt(pt image.Point, imgSize int) *Organism {
+	cellSize := float32(imgSize) / float32(e.Size)
+
+	for _, org := range e.Organisms {
+		orgBounds := image.Rect(
+			int(float32(org.X)*cellSize),
+			int(float32(org.Y)*cellSize),
+			int(float32(org.X+1)*cellSize),
+			int(float32(org.Y+1)*cellSize),
+		)
+
+		if pt.In(orgBounds) {
+			return org
+		}
+	}
+
+	return nil
+}
+
+func (e *Environment) PauseHandler(_ *widget.ButtonClickedEventArgs) {
 	e.paused = !e.paused
 }
 
