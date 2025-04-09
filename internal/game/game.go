@@ -71,9 +71,8 @@ func (g *Game) Layout(_, _ int) (int, int) {
 }
 
 func (g *Game) orgSelectHandler(args *widget.WidgetMouseButtonReleasedEventArgs) {
-	pt := image.Pt(args.OffsetX, args.OffsetY)
-	if pt.In(g.viewManager.GraphImg.Bounds()) {
-		org := g.currentEnv.GetOrganismAt(pt, g.WindowSize)
+	if args.Inside {
+		org := g.currentEnv.GetOrganismAt(image.Pt(args.OffsetX, args.OffsetY), g.WindowSize)
 		if org != nil {
 			g.graphRenderer.OrgCh <- org
 		}

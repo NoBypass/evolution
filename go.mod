@@ -5,6 +5,7 @@ go 1.23.0
 toolchain go1.23.5
 
 require (
+	github.com/chewxy/math32 v1.11.1 // indirect
 	github.com/ebitengine/gomobile v0.0.0-20250209143333-6071a2a2351c // indirect
 	github.com/ebitengine/hideconsole v1.0.0 // indirect
 	github.com/ebitengine/purego v0.8.2 // indirect

@@ -1,6 +1,7 @@
 package neural
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 )
@@ -107,4 +108,39 @@ func (n *Neuron) computeAction(solutions []float32) float32 {
 	}
 
 	return float32(math.Tanh(sum))
+}
+
+func (k Kind) String() string {
+	if k < 0 {
+		return ""
+	}
+
+	switch k {
+	case Random:
+		return "Rnd"
+	case PopDensity:
+		return "Dsty"
+	case BlockageFront:
+		return "Bft"
+	case BlockageLeftRight:
+		return "Blr"
+	case EastWestBorderDistance:
+		return "Ebd"
+	case NorthSouthBorderDistance:
+		return "Nbd"
+	case MoveForward:
+		return "MvFwd"
+	case MoveBackward:
+		return "MvBwd"
+	case MoveRandom:
+		return "MvRnd"
+	case MoveLeftRight:
+		return "MvLrd"
+	case MoveEastWest:
+		return "MvEwd"
+	case MoveNorthSouth:
+		return "MvSnd"
+	default:
+		panic(fmt.Sprintf("unexpected neuron type %d", k))
+	}
 }

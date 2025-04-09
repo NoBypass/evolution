@@ -1,11 +1,16 @@
 package ui
 
 import (
+	"bytes"
+	"evolution/internal/utils"
 	"github.com/ebitenui/ebitenui"
 	"github.com/ebitenui/ebitenui/image"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
+	image2 "image"
 	"image/color"
+	"image/png"
 )
 
 type ViewManager struct {
@@ -61,7 +66,6 @@ func NewViewManager(size int, h Handlers) *ViewManager {
 	)
 
 	right := widget.NewContainer(
-		widget.ContainerOpts.BackgroundImage(image.NewNineSliceColor(color.NRGBA{0, 255, 0, 128})),
 		widget.ContainerOpts.WidgetOpts(
 			widget.WidgetOpts.LayoutData(widget.GridLayoutData{
 				HorizontalPosition: widget.GridLayoutPositionCenter,
@@ -88,8 +92,8 @@ func NewViewManager(size int, h Handlers) *ViewManager {
 		),
 	)
 
-	viewManager.GenerationLabel = widget.NewText(widget.TextOpts.Text("", mplusNormalFace, color.Black))
-	viewManager.SurvivorsLabel = widget.NewText(widget.TextOpts.Text("", mplusNormalFace, color.Black))
+	viewManager.GenerationLabel = widget.NewText(widget.TextOpts.Text("", utils.MplusNormalFace, color.Black))
+	viewManager.SurvivorsLabel = widget.NewText(widget.TextOpts.Text("", utils.MplusNormalFace, color.Black))
 
 	header.AddChild(
 		viewManager.GenerationLabel,
@@ -107,7 +111,7 @@ func NewViewManager(size int, h Handlers) *ViewManager {
 			Hover:   image.NewBorderedNineSliceColor(color.NRGBA{R: 130, G: 130, B: 150, A: 255}, color.NRGBA{70, 70, 70, 255}, 3),
 			Pressed: image.NewAdvancedNineSliceColor(color.NRGBA{R: 130, G: 130, B: 150, A: 255}, image.NewBorder(3, 2, 2, 2, color.NRGBA{70, 70, 70, 255})),
 		}),
-		widget.ButtonOpts.Text("Pause", mplusNormalFace, &widget.ButtonTextColor{
+		widget.ButtonOpts.Text("Pause", utils.MplusNormalFace, &widget.ButtonTextColor{
 			Idle: color.Black,
 		}),
 		widget.ButtonOpts.TextPadding(widget.Insets{
@@ -124,7 +128,7 @@ func NewViewManager(size int, h Handlers) *ViewManager {
 			Idle:      image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 100, A: 255}),
 			Highlight: image.NewNineSliceColor(color.NRGBA{R: 100, G: 100, B: 150, A: 255}),
 		}),
-		widget.TextInputOpts.Face(mplusNormalFace),
+		widget.TextInputOpts.Face(utils.MplusNormalFace),
 		widget.TextInputOpts.Color(&widget.TextInputColor{
 			Idle:          color.NRGBA{254, 255, 255, 255},
 			Disabled:      color.NRGBA{R: 200, G: 200, B: 200, A: 255},
@@ -133,7 +137,7 @@ func NewViewManager(size int, h Handlers) *ViewManager {
 		}),
 		widget.TextInputOpts.Padding(widget.NewInsetsSimple(5)),
 		widget.TextInputOpts.CaretOpts(
-			widget.CaretOpts.Size(mplusNormalFace, 2),
+			widget.CaretOpts.Size(utils.MplusNormalFace, 2),
 		),
 		widget.TextInputOpts.Placeholder("0"),
 		widget.TextInputOpts.SubmitHandler(h.MsptSubmit),
@@ -153,9 +157,6 @@ func NewViewManager(size int, h Handlers) *ViewManager {
 
 	graphGraphic := widget.NewGraphic(
 		widget.GraphicOpts.Image(viewManager.GraphImg),
-		widget.GraphicOpts.WidgetOpts(
-			widget.WidgetOpts.MouseButtonReleasedHandler(h.SimulationClick),
-		),
 	)
 
 	right.AddChild(
@@ -170,4 +171,20 @@ func NewViewManager(size int, h Handlers) *ViewManager {
 	)
 
 	return viewManager
+}
+
+func newPlainImage(size int) *ebiten.Image {
+	img := image2.NewRGBA(image2.Rect(0, 0, size, size))
+	var buf bytes.Buffer
+	err := png.Encode(&buf, img)
+	if err != nil {
+		panic(err)
+	}
+
+	ebitenImg, _, err := ebitenutil.NewImageFromReader(&buf)
+	if err != nil {
+		panic(err)
+	}
+
+	return ebitenImg
 }
