@@ -9,7 +9,7 @@ func TestNewNeuralNet(t *testing.T) {
 	neurons := make(map[*Neuron]struct{})
 
 	nn := NewNeuralNet(20, 3)
-	for _, net := range nn.neurons {
+	for _, net := range nn.ActionNeurons {
 		deconstructNeuron(neurons, net)
 	}
 
@@ -35,8 +35,8 @@ func TestNewNeuralNet(t *testing.T) {
 			}
 		}
 	})
-	t.Run("test if all heads are action neurons", func(t *testing.T) {
-		for _, actionNeurons := range nn.neurons {
+	t.Run("test if all heads are action ActionNeurons", func(t *testing.T) {
+		for _, actionNeurons := range nn.ActionNeurons {
 			if actionNeurons.Type != Action {
 				t.Errorf("neural %v is not an action neuron", actionNeurons)
 			}

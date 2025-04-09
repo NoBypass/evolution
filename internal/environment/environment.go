@@ -3,6 +3,9 @@ package environment
 import (
 	"evolution/internal/environment/neural"
 	"evolution/internal/utils"
+	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/vector"
+	"image/color"
 	"math/rand"
 	"time"
 )
@@ -124,5 +127,26 @@ func (e *Environment) Run() {
 		}
 
 		e.lastTick = time.Now()
+	}
+}
+
+func (e *Environment) Draw(screen *ebiten.Image) {
+	size := float32(screen.Bounds().Max.X)
+	cellSize := size / float32(e.Size)
+	radius := float32(cellSize) / 2
+	orgRadius := radius * 0.8
+
+	vector.DrawFilledRect(screen, 0, 0,
+		size, size,
+		color.RGBA{R: 255, G: 255, B: 255}, false)
+
+	for _, org := range e.Organisms {
+		vector.DrawFilledCircle(
+			screen,
+			float32(org.X)*cellSize+radius,
+			float32(org.Y)*cellSize+radius,
+			orgRadius,
+			org.Color,
+			false)
 	}
 }

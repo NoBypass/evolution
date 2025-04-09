@@ -7,10 +7,8 @@ import (
 )
 
 type Network struct {
-	// neurons is a slice of sensory neurons. Each neuron
-	// has links to internal and/or action neurons.
-	neurons  []*Neuron
-	synapses []*Synapse
+	ActionNeurons []*Neuron
+	Synapses      []*Synapse
 }
 
 // TODO replace with more efficient solution
@@ -47,8 +45,8 @@ func NewNeuralNet(nSynapses, nInternal int) *Network {
 	}
 
 	nn := &Network{
-		neurons:  make([]*Neuron, 0, len(neurons)),
-		synapses: synapses,
+		ActionNeurons: make([]*Neuron, 0, len(neurons)),
+		Synapses:      synapses,
 	}
 
 	for _, synapse := range synapses {
@@ -58,7 +56,7 @@ func NewNeuralNet(nSynapses, nInternal int) *Network {
 
 	for _, neuron := range neurons {
 		if neuron.Type == Action {
-			nn.neurons = append(nn.neurons, neuron)
+			nn.ActionNeurons = append(nn.ActionNeurons, neuron)
 		}
 	}
 
@@ -75,7 +73,7 @@ func (n *Network) Compute(exec MovableSE) {
 	value := float32(-1)
 	action := new(Neuron)
 
-	for _, actionNeuron := range n.neurons {
+	for _, actionNeuron := range n.ActionNeurons {
 		num := actionNeuron.Compute(exec)
 		absNum := float32(math.Abs(float64(num)))
 		if absNum > highest || highest == 0 {

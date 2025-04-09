@@ -51,8 +51,8 @@ func (en *EncodedNet) Mutate() {
 }
 
 func (n *Network) Encode() *EncodedNet {
-	encoded := make([]EncodedSynapse, 0, len(n.synapses))
-	for _, synapse := range n.synapses {
+	encoded := make([]EncodedSynapse, 0, len(n.Synapses))
+	for _, synapse := range n.Synapses {
 		encoded = append(encoded, synapse.encode())
 	}
 	return (*EncodedNet)(&encoded)
@@ -96,8 +96,8 @@ func (en *EncodedNet) Decode() *Network {
 	}
 
 	nn := &Network{
-		neurons:  make([]*Neuron, 0, len(neurons)),
-		synapses: synapses,
+		ActionNeurons: make([]*Neuron, 0, len(neurons)),
+		Synapses:      synapses,
 	}
 
 	for _, synapse := range synapses {
@@ -107,7 +107,7 @@ func (en *EncodedNet) Decode() *Network {
 
 	for _, neuron := range neurons {
 		if neuron.Type == Action {
-			nn.neurons = append(nn.neurons, neuron)
+			nn.ActionNeurons = append(nn.ActionNeurons, neuron)
 		}
 	}
 

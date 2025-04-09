@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	HeaderOffset = 48
+	HeaderOffset   = 48
+	AnalysisOffset = 660
 )
 
 type Game struct {
@@ -19,6 +20,7 @@ type Game struct {
 	cmdHandler *command.Handler
 
 	clickedLastFrame bool
+	viewManager      *viewManager
 }
 
 func NewGame(size int, env *environment.Environment) *Game {
@@ -26,7 +28,8 @@ func NewGame(size int, env *environment.Environment) *Game {
 		WindowSize: size,
 		MainEnv:    env,
 
-		cmdHandler: command.NewHandler(),
+		cmdHandler:  command.NewHandler(),
+		viewManager: newViewManager(size),
 	}
 
 	go env.Run()
@@ -36,10 +39,12 @@ func NewGame(size int, env *environment.Environment) *Game {
 }
 
 func (g *Game) Size() (int, int) {
-	return g.WindowSize, g.WindowSize + HeaderOffset
+	return g.WindowSize + AnalysisOffset, g.WindowSize + HeaderOffset
 }
 
 func (g *Game) Update() error {
+	g.viewManager.ui.Update()
+
 	g.currentEnv = *g.MainEnv
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
@@ -59,12 +64,12 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
-	g.drawBackground(screen)
+	g.viewManager.generationLabel.Label = fmt.Sprintf("Gen: %d", g.currentEnv.CurrGen)
+	g.viewManager.survivorsLabel.Label = fmt.Sprintf("Survivors: %d (%d%%)", g.currentEnv.Survivors, int(100/float32(g.currentEnv.MaxPop)*float32(g.currentEnv.Survivors)))
 
-	g.drawText(screen, fmt.Sprintf("Gen: %d", g.currentEnv.CurrGen), 8, 8)
-	g.drawText(screen, fmt.Sprintf("Survivors: %d (%d%%)", g.currentEnv.Survivors, int(100/float32(g.currentEnv.MaxPop)*float32(g.currentEnv.Survivors))), 160, 8)
+	g.currentEnv.Draw(g.viewManager.simulationImg)
 
-	g.drawEnvironment(screen)
+	g.viewManager.ui.Draw(screen)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {

@@ -7,7 +7,7 @@ import (
 )
 
 type Organism struct {
-	net        *neural.Network
+	Net        *neural.Network
 	EncodedNet *neural.EncodedNet
 	Color      color.RGBA
 
@@ -20,7 +20,7 @@ func NewOrganism(nSynapses, maxInternalNeurons int, env *Environment) *Organism 
 	net := neural.NewNeuralNet(nSynapses, maxInternalNeurons)
 	encoded := net.Encode()
 	return &Organism{
-		net:        net,
+		Net:        net,
 		EncodedNet: encoded,
 		Color:      encoded.Color(),
 		Env:        env,
@@ -30,15 +30,33 @@ func NewOrganism(nSynapses, maxInternalNeurons int, env *Environment) *Organism 
 func NewOrganismFromNetwork(net *neural.Network, env *Environment) *Organism {
 	encoded := net.Encode()
 	return &Organism{
-		net:        net,
+		Net:        net,
 		EncodedNet: encoded,
 		Color:      encoded.Color(),
 		Env:        env,
 	}
 }
 
+func NewOrganismFromEncodedNet(encodedNet string) *Organism {
+	data, err := base64.RawURLEncoding.DecodeString(encodedNet)
+	if err != nil {
+		panic(err)
+	}
+
+	en := make(neural.EncodedNet, len(data)/6)
+	for i := range en {
+		copy(en[i][:], data[i*6:(i+1)*6])
+	}
+
+	return &Organism{
+		Net:        en.Decode(),
+		EncodedNet: &en,
+		Color:      en.Color(),
+	}
+}
+
 func (o *Organism) Compute() {
-	o.net.Compute(o)
+	o.Net.Compute(o)
 }
 
 func (o *Organism) Move(d neural.Orientation) {
@@ -78,5 +96,5 @@ func (o *Organism) String() string {
 	for i, es := range *en {
 		copy(buf[i*6:], es[:])
 	}
-	return base64.StdEncoding.EncodeToString(buf)
+	return base64.RawURLEncoding.EncodeToString(buf)
 }
