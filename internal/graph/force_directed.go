@@ -1,14 +1,15 @@
 package graph
 
 import (
-	"github.com/chewxy/math32"
+	"evolution/internal/util"
 	"image/color"
 	"math/rand/v2"
 )
 
 const (
 	graphWidth, graphHeight = 1000, 1000 // bounds for the simulation
-	centerX, centerY        = graphWidth / 2, graphHeight / 2
+
+	centerX, centerY = graphWidth / 2, graphHeight / 2
 
 	kSpring    = 0.1  // stiffness of each spring (edge)
 	kRepulsion = 1000 // repulsion strength of the nodes
@@ -19,19 +20,25 @@ const (
 	desiredDistance = 150 // the desired length of each spring (edge)
 )
 
+var (
+	timeStepVec   = util.Vec2(timeStep, timeStep)
+	centerVec     = util.Vec2(centerX, centerY)
+	kCenteringVec = util.Vec2(kCentering, kCentering)
+)
+
 type Node struct {
-	X, Y   float32 // position
-	VX, VY float32 // velocity
-	FX, FY float32 // force
-	Text   string
-	Edges  []*Edge
-	Color  color.Color
+	pos      util.Vector2
+	velocity util.Vector2
+	force    util.Vector2
+	Text     string
+	Edges    []*Edge
+	Color    color.Color
 }
 
 type Edge struct {
 	To     *Node
 	Weight float32
-	ux, uy float32 // partial unit vector from parent to child node
+	vUnit  util.Vector2
 }
 
 type Graph struct {
@@ -41,29 +48,25 @@ type Graph struct {
 func (g *Graph) tick() {
 	// Reset forces
 	for _, n := range g.Nodes {
-		n.FX, n.FY = 0, 0
+		n.force = util.Vec2(0, 0)
 	}
 
 	// Repulsion forces
 	for i, a := range g.Nodes {
 		for j := i + 1; j < len(g.Nodes); j++ {
 			b := g.Nodes[j]
-			dx, dy := a.X-b.X, a.Y-b.Y
-			dsq := dx*dx + dy*dy
+			distVec := a.pos.Sub(b.pos)
+			dsq := distVec.Dot(distVec)
 
 			if dsq < 1e-8 {
-				dx, dy = rand.Float32()*2-1, rand.Float32()*2-1
-				dsq = dx*dx + dy*dy
+				distVec = util.Vec2(rand.Float32()*2-1, rand.Float32()*2-1)
+				dsq = distVec.Dot(distVec)
 			}
 
-			dist := math32.Sqrt(dsq)
-			force := kRepulsion / dsq
-			fx, fy := force*dx/dist, force*dy/dist
+			forceVec := distVec.Mul(kRepulsion / dsq).Div(distVec.Len())
 
-			a.FX += fx
-			a.FY += fy
-			b.FX -= fx
-			b.FY -= fy
+			a.force = a.force.Add(forceVec)
+			b.force = b.force.Sub(forceVec)
 		}
 	}
 
@@ -71,44 +74,33 @@ func (g *Graph) tick() {
 	for _, n := range g.Nodes {
 		for _, e := range n.Edges {
 			to := e.To
-			dx, dy := n.X-to.X, n.Y-to.Y
-			dist := math32.Sqrt(dx*dx + dy*dy)
+			distVec := n.pos.Sub(to.pos)
+			dist := distVec.Len()
 			if dist == 0 {
 				continue // avoid division by zero
 			}
 
-			e.ux, e.uy = dx/dist, dy/dist
+			e.vUnit = distVec.Normalize()
 
-			force := -kSpring * (dist - desiredDistance)
-			fx, fy := force*dx/dist, force*dy/dist
+			forceVec := distVec.Mul(-kSpring * (dist - desiredDistance)).Div(dist)
 
-			n.FX += fx
-			n.FY += fy
-			to.FX -= fx
-			to.FY -= fy
+			n.force = n.force.Add(forceVec)
+			to.force = to.force.Sub(forceVec)
 		}
 	}
 
 	// Centering forces
 	for _, n := range g.Nodes {
-		dx := centerX - n.X
-		dy := centerY - n.Y
-		n.FX += kCentering * dx
-		n.FY += kCentering * dy
+		n.force = n.force.Add(kCenteringVec.EProd(centerVec.Sub(n.pos)))
 	}
 
 	// Apply forces to velocity and update positions
 	for _, n := range g.Nodes {
-		n.VX += timeStep * n.FX
-		n.VY += timeStep * n.FY
+		n.velocity = n.velocity.Add(timeStepVec.EProd(n.force))
 
-		n.X += timeStep * n.VX
-		n.Y += timeStep * n.VY
+		n.pos = n.pos.Add(timeStepVec.EProd(n.velocity))
+		n.pos = util.Vec2(min(max(n.pos.X, 0), graphWidth), min(max(n.pos.Y, 0), graphHeight))
 
-		n.VX *= 0.85
-		n.VY *= 0.85
-
-		n.X = math32.Min(math32.Max(n.X, 0), graphWidth)
-		n.Y = math32.Min(math32.Max(n.Y, 0), graphHeight)
+		n.velocity = n.velocity.Mul(0.85)
 	}
 }

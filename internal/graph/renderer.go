@@ -18,8 +18,7 @@ type Renderer struct {
 	img   *ebiten.Image
 	graph *Graph
 
-	// axis multiplier
-	mx, my float32
+	axisMultiplier util.Vector2
 }
 
 func NewRenderer(img *ebiten.Image) *Renderer {
@@ -27,9 +26,8 @@ func NewRenderer(img *ebiten.Image) *Renderer {
 		img:   img,
 		graph: &Graph{},
 
-		OrgCh: make(chan *environment.Organism),
-		mx:    float32(img.Bounds().Max.X) / graphWidth,
-		my:    float32(img.Bounds().Max.Y) / graphHeight,
+		OrgCh:          make(chan *environment.Organism),
+		axisMultiplier: util.Vec2(float32(img.Bounds().Max.X)/graphWidth, float32(img.Bounds().Max.Y)/graphHeight),
 	}
 }
 
@@ -88,8 +86,7 @@ func newNode(neuron *neural.Neuron) *Node {
 	}
 
 	return &Node{
-		X:     centerX,
-		Y:     centerY,
+		pos:   centerVec,
 		Color: clr,
 		Text:  neuron.ID.String(),
 		Edges: make([]*Edge, 0),
@@ -99,8 +96,7 @@ func newNode(neuron *neural.Neuron) *Node {
 func (r *Renderer) Draw(img *ebiten.Image) {
 	img.Clear()
 	for _, n := range r.graph.Nodes {
-		vAxisMultiplier := util.Vec2(r.mx, r.my) // TODO simplify
-		vNode := util.Vec2(n.X, n.Y).EProd(vAxisMultiplier)
+		vNode := n.pos.EProd(r.axisMultiplier)
 
 		util.DrawFilledCircle(img, vNode, NodeRadius, util.WithColor(n.Color))
 		util.DrawText(img, n.Text, vNode, util.MplusNormalFaceSm)
@@ -109,9 +105,9 @@ func (r *Renderer) Draw(img *ebiten.Image) {
 			lineWidth := max(e.Weight*2.5, 1)
 			arrowLen := max(lineWidth*2, 5)
 
-			vAdjust := util.Vec2(NodeRadius*e.ux, NodeRadius*e.uy)
+			vAdjust := e.vUnit.Mul(NodeRadius)
 			v1 := vNode.Sub(vAdjust)
-			v2 := util.Vec2(e.To.X, e.To.Y).EProd(vAxisMultiplier)
+			v2 := e.To.pos.EProd(r.axisMultiplier)
 			v3 := v2.Add(vAdjust.Normalize().Mul(vAdjust.Len() + arrowLen))
 
 			util.DrawLine(img, v1, v3, util.WithWidth(lineWidth))
