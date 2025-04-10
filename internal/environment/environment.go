@@ -2,7 +2,7 @@ package environment
 
 import (
 	"evolution/internal/environment/neural"
-	"evolution/internal/utils"
+	"evolution/internal/util"
 	"github.com/ebitenui/ebitenui/widget"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/vector"
@@ -75,7 +75,7 @@ func (e *Environment) GenerateOffspring(mutationRate int) {
 }
 
 func (e *Environment) RandomizeOrganisms() {
-	coords := utils.GenerateUniqueCoordinates(e.MaxPop, e.Size, e.Size)
+	coords := util.GenerateUniqueCoordinates(e.MaxPop, e.Size, e.Size)
 
 	for i, org := range e.Organisms {
 		org.X = coords[i][0]

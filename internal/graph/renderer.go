@@ -3,10 +3,8 @@ package graph
 import (
 	"evolution/internal/environment"
 	"evolution/internal/environment/neural"
-	"evolution/internal/utils"
+	"evolution/internal/util"
 	"github.com/hajimehoshi/ebiten/v2"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
-	"github.com/hajimehoshi/ebiten/v2/vector"
 	"image/color"
 )
 
@@ -39,13 +37,31 @@ func (r *Renderer) Run() {
 	org := <-r.OrgCh
 	for {
 		r.graph = new(Graph)
-		m := make(map[*neural.Neuron]*Node)
-		for _, n := range org.Net.ActionNeurons {
-			traverse(n, m)
+		nodes := make(map[*neural.Neuron]*Node)
+
+		for _, syn := range org.Net.Synapses {
+			to, ok := nodes[syn.To]
+			if !ok {
+				to = newNode(syn.To)
+				nodes[syn.To] = to
+			}
+
+			edge := &Edge{
+				Weight: syn.Weight,
+				To:     to,
+			}
+
+			from, ok := nodes[syn.From]
+			if !ok {
+				from = newNode(syn.From)
+				nodes[syn.From] = from
+			}
+
+			from.Edges = append(from.Edges, edge)
 		}
 
-		for _, n := range m {
-			r.graph.Nodes = append(r.graph.Nodes, n)
+		for _, node := range nodes {
+			r.graph.Nodes = append(r.graph.Nodes, node)
 		}
 
 	ticker:
@@ -60,7 +76,7 @@ func (r *Renderer) Run() {
 	}
 }
 
-func traverse(neuron *neural.Neuron, m map[*neural.Neuron]*Node) *Node {
+func newNode(neuron *neural.Neuron) *Node {
 	var clr color.Color = color.Black
 	switch neuron.Type {
 	case neural.Sensory:
@@ -70,61 +86,37 @@ func traverse(neuron *neural.Neuron, m map[*neural.Neuron]*Node) *Node {
 	case neural.Action:
 		clr = color.RGBA{255, 184, 106, 255}
 	}
-	node := &Node{
-		X:     graphWidth / 2,
-		Y:     graphHeight / 2,
-		Text:  neuron.ID.String(),
+
+	return &Node{
+		X:     centerX,
+		Y:     centerY,
 		Color: clr,
+		Text:  neuron.ID.String(),
+		Edges: make([]*Edge, 0),
 	}
-	for _, s := range neuron.Incoming {
-		var to *Node
-		if n, ok := m[neuron]; ok {
-			to = n
-		} else {
-			to = traverse(s.From, m)
-		}
-
-		node.Edges = append(node.Edges, &Edge{
-			Weight: s.Weight,
-			To:     to,
-		})
-	}
-
-	m[neuron] = node
-	return node
 }
 
 func (r *Renderer) Draw(img *ebiten.Image) {
 	img.Clear()
 	for _, n := range r.graph.Nodes {
-		x, y := n.X*r.mx, n.Y*r.my
-		vector.DrawFilledCircle(
-			img,
-			x,
-			y,
-			NodeRadius,
-			n.Color,
-			true)
-		drawText(img, n.Text, x, y)
+		vAxisMultiplier := util.Vec2(r.mx, r.my) // TODO simplify
+		vNode := util.Vec2(n.X, n.Y).EProd(vAxisMultiplier)
+
+		util.DrawFilledCircle(img, vNode, NodeRadius, util.WithColor(n.Color))
+		util.DrawText(img, n.Text, vNode, util.MplusNormalFaceSm)
+
 		for _, e := range n.Edges {
-			vector.StrokeLine(
-				img,
-				x-NodeRadius*e.ux,
-				y-NodeRadius*e.uy,
-				e.To.X*r.my+NodeRadius*e.ux,
-				e.To.Y*r.my+NodeRadius*e.uy,
-				max(e.Weight*2.5, 1),
-				color.Black,
-				true)
+			lineWidth := max(e.Weight*2.5, 1)
+			arrowLen := max(lineWidth*2, 5)
+
+			vAdjust := util.Vec2(NodeRadius*e.ux, NodeRadius*e.uy)
+			v1 := vNode.Sub(vAdjust)
+			v2 := util.Vec2(e.To.X, e.To.Y).EProd(vAxisMultiplier)
+			v3 := v2.Add(vAdjust.Normalize().Mul(vAdjust.Len() + arrowLen))
+
+			util.DrawLine(img, v1, v3, util.WithWidth(lineWidth))
+
+			util.DrawFilledArrow(img, v3, v2.Add(vAdjust))
 		}
 	}
-}
-
-func drawText(img *ebiten.Image, str string, x, y float32) {
-	op := &text.DrawOptions{}
-	op.ColorScale.Scale(0, 0, 0, 1)
-	op.GeoM.Translate(float64(x), float64(y))
-	op.LayoutOptions.PrimaryAlign = text.AlignCenter
-	op.LayoutOptions.SecondaryAlign = text.AlignCenter
-	text.Draw(img, str, utils.MplusNormalFaceSm, op)
 }
