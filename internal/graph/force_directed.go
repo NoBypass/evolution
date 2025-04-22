@@ -11,7 +11,7 @@ const (
 
 	centerX, centerY = graphWidth / 2, graphHeight / 2
 
-	kSpring    = 0.1  // stiffness of each spring (edge)
+	kSpring    = 1e-3 // stiffness of each spring (edge)
 	kRepulsion = 1000 // repulsion strength of the nodes
 	kCentering = 1e-4 // force to keep nodes near the center
 

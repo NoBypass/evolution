@@ -32,8 +32,7 @@ func DrawText(img *ebiten.Image, str string, at Vector2, face text.Face) {
 	op := &text.DrawOptions{}
 	op.ColorScale.Scale(0, 0, 0, 1)
 	op.GeoM.Translate(at.As64())
-	op.PrimaryAlign = text.AlignCenter
-	op.SecondaryAlign = text.AlignCenter
+	op.PrimaryAlign, op.SecondaryAlign = text.AlignCenter, text.AlignCenter
 	text.Draw(img, str, face, op)
 }
 
