@@ -37,7 +37,7 @@ func (r *Renderer) Run() {
 		r.graph = new(Graph)
 		nodes := make(map[*neural.Neuron]*Node)
 
-		for _, syn := range org.Net.Synapses {
+		for syn := range org.Net.Synapses {
 			to, ok := nodes[syn.To]
 			if !ok {
 				to = newNode(syn.To)

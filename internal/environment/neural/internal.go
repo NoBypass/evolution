@@ -1,7 +1,5 @@
 package neural
 
-import "math/rand"
-
 const (
 	Random Kind = iota
 	PopDensity
@@ -10,16 +8,16 @@ const (
 	EastWestBorderDistance
 	NorthSouthBorderDistance
 
-	_totalSensoryNeurons
+	_totalSensoryNeurons int = iota
 
-	MoveForward
+	MoveForward Kind = iota - 1
 	MoveBackward
 	MoveRandom
 	MoveLeftRight
 	MoveEastWest
 	MoveNorthSouth
 
-	_totalNeurons
+	_totalNeurons int = iota - 1
 )
 
 const (
@@ -28,47 +26,26 @@ const (
 	Action
 )
 
-func randomSensoryOrInternalNeuron(nInternal int) *Neuron {
-	kind := Kind(rand.Intn(int(_totalSensoryNeurons)+nInternal) - nInternal)
-	t := Sensory
-	if kind < 0 {
-		t = Internal
-	}
-
-	return &Neuron{
-		ID:       kind,
-		Type:     t,
-		Incoming: make([]*Synapse, 0),
-	}
-}
-
-func randomInternalOrActionNeuron(nInternal int) *Neuron {
-	kind := Kind(rand.Intn(int(_totalNeurons)-(1+int(_totalSensoryNeurons))+nInternal) + 1 + int(_totalSensoryNeurons))
-	t := Action
-
-	if kind >= _totalNeurons {
-		kind = 0 - kind + _totalNeurons - 1
-		t = Internal
-	}
-
-	return &Neuron{
-		ID:       kind,
-		Type:     t,
-		Incoming: make([]*Synapse, 0),
-	}
-}
-
 func generateNeuronByKind(kind Kind) *Neuron {
 	t := Action
 	if kind < 0 {
 		t = Internal
-	} else if kind < _totalSensoryNeurons {
+	} else if int(kind) < _totalSensoryNeurons {
 		t = Sensory
 	}
 
 	return &Neuron{
-		ID:       kind,
-		Type:     t,
-		Incoming: make([]*Synapse, 0),
+		ID:   kind,
+		Type: t,
+	}
+}
+
+func (k Kind) asType() Type {
+	if k < 0 {
+		return Internal
+	} else if int(k) < _totalSensoryNeurons {
+		return Sensory
+	} else {
+		return Action
 	}
 }

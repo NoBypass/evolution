@@ -52,7 +52,7 @@ func (en *EncodedNet) Mutate() {
 
 func (n *Network) Encode() *EncodedNet {
 	encoded := make([]EncodedSynapse, 0, len(n.Synapses))
-	for _, synapse := range n.Synapses {
+	for synapse := range n.Synapses {
 		encoded = append(encoded, synapse.encode())
 	}
 	return (*EncodedNet)(&encoded)
@@ -72,7 +72,7 @@ func OffspringOf(a, b *EncodedNet) *EncodedNet {
 
 func (en *EncodedNet) Decode() *Network {
 	neurons := make(map[Kind]*Neuron)
-	synapses := make([]*Synapse, 0, len(*en))
+	synapses := make(map[*Synapse]float32, len(*en))
 
 	for _, es := range *en {
 		fromKind, toKind := es.fromKind(), es.toKind()
@@ -88,26 +88,21 @@ func (en *EncodedNet) Decode() *Network {
 			neurons[toKind] = to
 		}
 
-		synapses = append(synapses, &Synapse{
+		synapses[&Synapse{
 			Weight: es.weight(),
 			From:   from,
 			To:     to,
-		})
+		}] = 0
 	}
 
 	nn := &Network{
-		ActionNeurons: make([]*Neuron, 0, len(neurons)),
-		Synapses:      synapses,
-	}
-
-	for _, synapse := range synapses {
-		synapse.From.Outgoing = synapse
-		synapse.To.Incoming = append(synapse.To.Incoming, synapse)
+		Neurons:  make([]*Neuron, 0, len(neurons)),
+		Synapses: synapses,
 	}
 
 	for _, neuron := range neurons {
 		if neuron.Type == Action {
-			nn.ActionNeurons = append(nn.ActionNeurons, neuron)
+			nn.Neurons = append(nn.Neurons, neuron)
 		}
 	}
 

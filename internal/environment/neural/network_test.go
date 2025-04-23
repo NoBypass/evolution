@@ -9,8 +9,9 @@ func TestNewNeuralNet(t *testing.T) {
 	neurons := make(map[*Neuron]struct{})
 
 	nn := NewNeuralNet(20, 3)
-	for _, net := range nn.ActionNeurons {
-		deconstructNeuron(neurons, net)
+	for syn := range nn.Synapses {
+		neurons[syn.To] = struct{}{}
+		neurons[syn.From] = struct{}{}
 	}
 
 	t.Run("test if kind matches type", func(t *testing.T) {
@@ -36,18 +37,10 @@ func TestNewNeuralNet(t *testing.T) {
 		}
 	})
 	t.Run("test if all heads are action ActionNeurons", func(t *testing.T) {
-		for _, actionNeurons := range nn.ActionNeurons {
+		for _, actionNeurons := range nn.Neurons {
 			if actionNeurons.Type != Action {
 				t.Errorf("neural %v is not an action neuron", actionNeurons)
 			}
 		}
 	})
-}
-
-func deconstructNeuron(neurons map[*Neuron]struct{}, neuron *Neuron) {
-	neurons[neuron] = struct{}{}
-
-	if neuron.Outgoing != nil {
-		deconstructNeuron(neurons, neuron.Outgoing.To)
-	}
 }

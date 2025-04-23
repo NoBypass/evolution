@@ -11,10 +11,9 @@ type Kind int8
 type Type int8
 
 type Neuron struct {
-	ID       Kind
-	Type     Type
-	Incoming []*Synapse
-	Outgoing *Synapse
+	ID    Kind
+	Type  Type
+	Value float32
 }
 
 type Synapse struct {
@@ -42,26 +41,7 @@ type SensorEquipped interface {
 	NorthSouthBorderDistance() float32
 }
 
-func (n *Neuron) Compute(se SensorEquipped) float32 {
-	parentSolutions := make([]float32, 0, len(n.Incoming))
-
-	for _, synapse := range n.Incoming {
-		parentSolutions = append(parentSolutions, synapse.From.Compute(se))
-	}
-
-	switch n.Type {
-	case Sensory:
-		return n.sensorData(se)
-	case Internal:
-		return n.computeInternal(parentSolutions)
-	case Action:
-		return n.computeAction(parentSolutions)
-	default:
-		panic("unknown neuron type")
-	}
-}
-
-func (n *Neuron) sensorData(se SensorEquipped) float32 {
+func (n *Neuron) SensorData(se SensorEquipped) float32 {
 	if n.Type != Sensory {
 		panic("expected sensory neuron")
 	}
@@ -141,6 +121,6 @@ func (k Kind) String() string {
 	case MoveNorthSouth:
 		return "MvSnd"
 	default:
-		panic(fmt.Sprintf("unexpected neuron type %d", k))
+		return fmt.Sprintf("Internal.%d", int(k))
 	}
 }

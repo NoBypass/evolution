@@ -2,65 +2,102 @@ package neural
 
 import (
 	"fmt"
-	"math"
+	"github.com/chewxy/math32"
 	"math/rand"
+	"slices"
 )
 
 type Network struct {
-	ActionNeurons []*Neuron
-	Synapses      []*Synapse
+	Neurons  []*Neuron
+	Synapses map[*Synapse]float32
 }
 
-// TODO replace with more efficient solution
-func NewNeuralNet(nSynapses, nInternal int) *Network {
-	synapses := make([]*Synapse, 0, nSynapses)
-	neurons := make(map[Kind]*Neuron)
+func NewNeuralNet(synapseCount, internalCount int) *Network {
+	sample := make(map[Kind]*Neuron, _totalNeurons)
+	inDegree := make(map[*Neuron]int, _totalNeurons)
 
-	for range nSynapses {
-		from := randomSensoryOrInternalNeuron(nInternal)
-		var to *Neuron
-		if from.Type == Internal {
-			to = randomInternalOrActionNeuron(0)
+	for i := range _totalNeurons + internalCount {
+		k := Kind(i - internalCount)
+		sample[k] = &Neuron{ID: k, Type: k.asType()}
+	}
+
+	net := &Network{
+		Neurons:  make([]*Neuron, 0),
+		Synapses: make(map[*Synapse]float32),
+	}
+
+	dagSlice := generateDAGSlice(internalCount)
+
+	for range synapseCount {
+		fromK := Kind(rand.Intn(_totalSensoryNeurons+internalCount) - internalCount)
+
+		var selection []Kind
+		if fromK.asType() == Sensory {
+			selection = dagSlice[_totalSensoryNeurons:]
 		} else {
-			to = randomInternalOrActionNeuron(nInternal)
+			selection = dagSlice[slices.Index(dagSlice, fromK)+1:]
 		}
 
-		if existing, exists := neurons[from.ID]; exists {
-			from = existing
-		} else {
-			neurons[from.ID] = from
-		}
+		toK := selection[rand.Intn(len(selection))]
 
-		if existing, exists := neurons[to.ID]; exists {
-			to = existing
-		} else {
-			neurons[to.ID] = to
-		}
+		// TODO fix duplicate synapse connections
+		// TODO assure no cyclic references between internal neurons
 
-		synapses = append(synapses, &Synapse{
+		inDegree[sample[fromK]], inDegree[sample[toK]] = 0, 0
+
+		net.Synapses[&Synapse{
 			Weight: rand.Float32()*8 - 4,
-			From:   from,
-			To:     to,
-		})
+			From:   sample[fromK],
+			To:     sample[toK],
+		}] = 0
 	}
 
-	nn := &Network{
-		ActionNeurons: make([]*Neuron, 0, len(neurons)),
-		Synapses:      synapses,
+	for s := range net.Synapses {
+		inDegree[s.To]++
 	}
 
-	for _, synapse := range synapses {
-		synapse.From.Outgoing = synapse
-		synapse.To.Incoming = append(synapse.To.Incoming, synapse)
-	}
+	queue := make([]*Neuron, 0)
 
-	for _, neuron := range neurons {
-		if neuron.Type == Action {
-			nn.ActionNeurons = append(nn.ActionNeurons, neuron)
+	for id, degree := range inDegree {
+		if degree == 0 {
+			queue = append(queue, id)
 		}
 	}
 
-	return nn
+	for len(queue) > 0 {
+		current := queue[0]
+		queue = queue[1:]
+		net.Neurons = append(net.Neurons, current)
+
+		for s := range net.Synapses {
+			if s.From == current {
+				inDegree[s.To]--
+				if inDegree[s.To] == 0 {
+					queue = append(queue, s.To)
+				}
+			}
+		}
+	}
+
+	if len(net.Neurons) != len(inDegree) {
+		panic("neural network contains a cycle, topological sort not possible")
+	}
+
+	return net
+}
+
+func generateDAGSlice(internalCount int) []Kind {
+	s := make([]Kind, _totalNeurons+internalCount)
+	for i := range s {
+		s[i] = Kind(i - internalCount)
+	}
+
+	at := _totalSensoryNeurons + internalCount
+	result := make([]Kind, len(s))
+	copy(result, s[internalCount:at])
+	copy(result[len(s[internalCount:at]):], s[:internalCount])
+	copy(result[len(s[internalCount:at])+len(s[:internalCount]):], s[at:])
+	return result
 }
 
 type MovableSE interface {
@@ -69,21 +106,38 @@ type MovableSE interface {
 }
 
 func (n *Network) Compute(exec MovableSE) {
-	var highest float32
-	value := float32(-1)
-	action := new(Neuron)
+	for _, neuron := range n.Neurons {
+		if neuron.Type == Sensory {
+			neuron.Value = neuron.SensorData(exec)
+		} else {
+			for synapse, v := range n.Synapses {
+				if synapse.To == neuron {
+					neuron.Value += v
+				}
+			}
 
-	for _, actionNeuron := range n.ActionNeurons {
-		num := actionNeuron.Compute(exec)
-		absNum := float32(math.Abs(float64(num)))
-		if absNum > highest || highest == 0 {
-			action = actionNeuron
-			highest = absNum
-			value = num
+			neuron.Value = math32.Tanh(neuron.Value)
+		}
+
+		for synapse := range n.Synapses {
+			if synapse.From == neuron {
+				n.Synapses[synapse] = synapse.Weight * neuron.Value
+			}
 		}
 	}
 
-	switch action.ID {
+	var highest *Neuron
+	for _, neuron := range n.Neurons {
+		if neuron.Type == Action && (highest == nil || math32.Abs(neuron.Value) > math32.Abs(highest.Value)) {
+			highest = neuron
+		}
+	}
+
+	if highest == nil {
+		panic("no highest action neuron could be found")
+	}
+
+	switch highest.ID {
 	case MoveForward:
 		exec.MoveDir(Front)
 	case MoveBackward:
@@ -91,24 +145,24 @@ func (n *Network) Compute(exec MovableSE) {
 	case MoveRandom:
 		exec.Move(Orientation(rand.Intn(4)))
 	case MoveLeftRight:
-		if value > 0 {
+		if highest.Value > 0 {
 			exec.MoveDir(Left)
 		} else {
 			exec.MoveDir(Right)
 		}
 	case MoveEastWest:
-		if value > 0 {
+		if highest.Value > 0 {
 			exec.Move(East)
 		} else {
 			exec.Move(West)
 		}
 	case MoveNorthSouth:
-		if value > 0 {
+		if highest.Value > 0 {
 			exec.Move(North)
 		} else {
 			exec.Move(South)
 		}
 	default:
-		panic(fmt.Sprintf("unexpected action %d", action.ID))
+		panic(fmt.Sprintf("unexpected action %d", highest.ID))
 	}
 }

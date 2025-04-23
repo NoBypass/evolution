@@ -37,24 +37,6 @@ func NewOrganismFromNetwork(net *neural.Network, env *Environment) *Organism {
 	}
 }
 
-func NewOrganismFromEncodedNet(encodedNet string) *Organism {
-	data, err := base64.RawURLEncoding.DecodeString(encodedNet)
-	if err != nil {
-		panic(err)
-	}
-
-	en := make(neural.EncodedNet, len(data)/6)
-	for i := range en {
-		copy(en[i][:], data[i*6:(i+1)*6])
-	}
-
-	return &Organism{
-		Net:        en.Decode(),
-		EncodedNet: &en,
-		Color:      en.Color(),
-	}
-}
-
 func (o *Organism) Compute() {
 	o.Net.Compute(o)
 }
