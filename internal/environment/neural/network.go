@@ -40,9 +40,6 @@ func NewNeuralNet(synapseCount, internalCount int) *Network {
 
 		toK := selection[rand.Intn(len(selection))]
 
-		// TODO fix duplicate synapse connections
-		// TODO assure no cyclic references between internal neurons
-
 		inDegree[sample[fromK]], inDegree[sample[toK]] = 0, 0
 
 		net.Synapses[&Synapse{

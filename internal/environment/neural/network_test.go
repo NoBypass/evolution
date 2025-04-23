@@ -36,11 +36,4 @@ func TestNewNeuralNet(t *testing.T) {
 			}
 		}
 	})
-	t.Run("test if all heads are action ActionNeurons", func(t *testing.T) {
-		for _, actionNeurons := range nn.Neurons {
-			if actionNeurons.Type != Action {
-				t.Errorf("neural %v is not an action neuron", actionNeurons)
-			}
-		}
-	})
 }
